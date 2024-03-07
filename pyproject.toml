@@ -1,0 +1,98 @@
+[project]
+name = "example_package_YOUR_USERNAME_HERE"
+version = "0.0.1"
+authors = [
+  { name="Example Author", email="author@example.com" },
+]
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/pypa/sampleproject"
+Issues = "https://github.com/pypa/sampleproject/issues"
+
+
+
+[build-system]
+requires = ["setuptools>=61", "wheel", "setuptools_scm[toml]>=3.4"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "casaeval"
+version = "0.0.1"
+authors = [
+    {name = "Philipp Trinh", email = "trinh.philipp@hotmail.com"},
+]
+description = "Data Preparation and Result Evaluation for casanovo: A de novo mass spectrometry peptide sequencing transformer model"
+license = {text = "Apache 2.0"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "timsrust_pyo3",
+    "pyteomics",
+    "click",
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "fileinput",
+    "json"
+    "re",
+    "itertools",
+    "collections"
+]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.urls]
+Homepage = "https://github.com/Kactaceapengu/casaeval"
+Documentation = "https://casanovo.readthedocs.io"
+"Bug Tracker" = "https://github.com/Noble-Lab/casanovo/issues"
+"Discussion Board" = "https://github.com/Noble-Lab/casanovo/discussions"
+
+[project.scripts]
+casanovo = "casaeval.casaeval:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+exclude = ["docs", "tests", "sample_data"]
+
+[tool.setuptools_scm]
+
+[tool.black]
+line-length = 79
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  | foo.py           # also separately exclude a file named foo.py in
+                     # the root of the project
+)
+'''
