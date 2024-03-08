@@ -7,8 +7,8 @@ import re
 from collections import defaultdict
 from itertools import chain
 
-from Casaval.casaeval.evaluation.evaluate import aa_match_batch, aa_match_metrics, aa_precision_recall  # from casanovo/denovo/evaluate.py, modified functions for evaluation
-from Casaval.casaeval.evaluation.masses import PeptideMass # get PeptideMass for a dictionary of all tokens
+from .evaluate import aa_match_batch, aa_match_metrics, aa_precision_recall # from casanovo/denovo/evaluate.py, modified functions for
+from .masses import PeptideMass # get PeptideMass for a dictionary of all tokens
 from pyteomics import mgf
 
 import numpy as np
@@ -304,93 +304,106 @@ def plot_matched_metrics(
     predicted_matched = matched_df.shape[0]
     predicted_not_matched = df[(df['seq'] == '') & (df['casanovo_seq'] != '')].shape[0]
     not_predicted = df[(df['seq'] == '') & (df['casanovo_seq'] == '')].shape[0]
+
+    rotation_angle = -40
+    while True:
+        # Build plot:
+        fig = plt.figure(figsize=(12,5))
+        left, bottom, width, height = 0.1, 0.1, 0.6, 0.6
+        
+        x_position = -0.1 # Fraction of figure width
+        y_position = 0.15  # Fraction of figure height
+        width = 0.8       # Fraction of figure width
+        height = 0.6      # Fraction of figure height
+        
+        ax1 = fig.add_axes([x_position, y_position, width, height])
+        
+        size_scale = 0.5
+        
+        ax2 = fig.add_axes([0.45, 0.40, size_scale*width, size_scale*height])
+        
+        ax3 = fig.add_axes([0.59, 0.40, size_scale*width, size_scale*height])
+        
+        # Plot pie chart for the metrics
+        overall_ratios = [predicted_matched, predicted_not_matched, not_predicted]
+        labels = [f'Predicted & Matched\n({predicted_matched})',
+                  f'Predicted & Not Matched\n({predicted_not_matched})',
+                  f'Not Predicted\n({not_predicted})']
+        explode = (0.1, 0, 0)
+        angle = -40
+        colors = ['cornflowerblue', 'lemonchiffon', 'dimgray']
+        wedges, texts, _ = ax1.pie(overall_ratios, autopct='%1.1f%%', startangle=rotation_angle, colors=colors, labels=labels, explode=explode, shadow = True, radius= 1.3)
+        # radius=1.8
+        ax1.set_title('Casanovo Peptide Annotation of HeLa Data (151503 spectra)', y=1.1) # y=1.3
+        
+        
+        x,y = texts[2].get_position()
+        texts[2].set_position((x - 0.3, y- 0.2))
+        
+        # Bar chart 1 for Peptide Precision
+        pep_ratios = [matched_metrics['pep_precision in %']/100, 1-matched_metrics['pep_precision in %']/100]
+        pep_labels = [f'Matched ({matched_metrics["n_total_correct_peptide"]})', f'Not matched ({matched_metrics["n_total_wrong_peptide"]})']
+        bottom = 1
+        width = .2
+        pep_bar_colors = ['#60B5FE', '#FE6969']
+        for j, (height, label, color) in enumerate(reversed([*zip(pep_ratios, pep_labels, pep_bar_colors)])):
+            bottom -= height
+            bc = ax2.bar(0, height, width, bottom=bottom, color=color, label=label, alpha=0.5)
+            ax2.bar_label(bc, labels=[f"{height:.0%}"], label_type='center')
+        
+        ax2.set_title('Peptide Precision')
+        ax2.legend(loc='best', bbox_to_anchor=(0.2, -0.4, 0.5, 0.5))
+        ax2.axis('off')
+        ax2.set_xlim(- 3.5 * width, 3.5 * width)
+        
+        # Bar chart 2 for AA Precision
+        aa_ratios = [matched_metrics['aa_precision of total pred. AA in %']/100, 1-matched_metrics['aa_precision of total pred. AA in %']/100]
+        aa_labels = [f"Matched ({matched_metrics['n_total_correct_aa']})", f"Not matched ({matched_metrics['n_total_aa']})"]
+        bottom = 1
+        width = .2
+        aa_bar_colors = ['#60FE70', '#FE6969']
+        for j, (height, label, color) in enumerate(reversed([*zip(aa_ratios, aa_labels, aa_bar_colors)])):
+            bottom -= height
+            bc = ax3.bar(0, height, width, bottom=bottom, color=color, label=label, alpha=0.5)
+            ax3.bar_label(bc, labels=[f"{height:.0%}"], label_type='center')
+        
+        ax3.set_title('Aminoacid Precision')
+        ax3.legend(loc='best', bbox_to_anchor=(0.3, -0.4, 0.5, 0.5))
+        ax3.axis('off')
+        ax3.set_xlim(- 3.5 * width, 3.5 * width)
+        
+        # Set up connections between the plots
+        theta1, theta2 = wedges[0].theta1, wedges[0].theta2
+        center, r = wedges[0].center, wedges[0].r
+        bar_height = sum(pep_ratios)
+        x = r * np.cos(np.pi / 180 * theta2) + center[0]
+        y = r * np.sin(np.pi / 180 * theta2) + center[1]
+        con = ConnectionPatch(xyA=(-width / 2, bar_height), coordsA=ax2.transData, xyB=(x, y), coordsB=ax1.transData)
+        con.set_color([0, 0, 0])
+        con.set_linewidth(1)
+        ax2.add_artist(con)
+        
+        # Draw bottom connecting line
+        x = r * np.cos(np.pi / 180 * theta1) + center[0]
+        y = r * np.sin(np.pi / 180 * theta1) + center[1]
+        con = ConnectionPatch(xyA=(-width / 2, 0), coordsA=ax2.transData, xyB=(x, y), coordsB=ax1.transData)
+        con.set_color([0, 0, 0])
+        ax2.add_artist(con)
+        con.set_linewidth(1)
+        
+        save_plot_with_path(f'{file_name}_matched_metrics_plot.png', output)
+        plt.show()
+
+        user_input = input("Enter rotation angle (or 'exit' to quit): ")
     
-    # Build plot:
-    fig = plt.figure(figsize=(12,5))
-    left, bottom, width, height = 0.1, 0.1, 0.6, 0.6
+        if user_input.lower() == 'exit':
+            break  
     
-    x_position = -0.1 # Fraction of figure width
-    y_position = 0.15  # Fraction of figure height
-    width = 0.8       # Fraction of figure width
-    height = 0.6      # Fraction of figure height
-    
-    ax1 = fig.add_axes([x_position, y_position, width, height])
-    
-    size_scale = 0.5
-    
-    ax2 = fig.add_axes([0.45, 0.40, size_scale*width, size_scale*height])
-    
-    ax3 = fig.add_axes([0.59, 0.40, size_scale*width, size_scale*height])
-    
-    # Plot pie chart for the metrics
-    overall_ratios = [predicted_matched, predicted_not_matched, not_predicted]
-    labels = [f'Predicted & Matched\n({predicted_matched})',
-              f'Predicted & Not Matched\n({predicted_not_matched})',
-              f'Not Predicted\n({not_predicted})']
-    explode = (0.1, 0, 0)
-    angle = -40
-    colors = ['cornflowerblue', 'lemonchiffon', 'dimgray']
-    wedges, texts, _ = ax1.pie(overall_ratios, autopct='%1.1f%%', startangle=angle, colors=colors, labels=labels, explode=explode, shadow = True, radius= 1.3)
-    # radius=1.8
-    ax1.set_title('Casanovo Peptide Annotation of HeLa Data (151503 spectra)', y=1.1) # y=1.3
-    
-    
-    x,y = texts[2].get_position()
-    texts[2].set_position((x - 0.3, y- 0.2))
-    
-    # Bar chart 1 for Peptide Precision
-    pep_ratios = [matched_metrics['pep_precision in %']/100, 1-matched_metrics['pep_precision in %']/100]
-    pep_labels = [f'Matched ({matched_metrics["n_total_correct_peptide"]})', f'Not matched ({matched_metrics["n_total_wrong_peptide"]})']
-    bottom = 1
-    width = .2
-    pep_bar_colors = ['#60B5FE', '#FE6969']
-    for j, (height, label, color) in enumerate(reversed([*zip(pep_ratios, pep_labels, pep_bar_colors)])):
-        bottom -= height
-        bc = ax2.bar(0, height, width, bottom=bottom, color=color, label=label, alpha=0.5)
-        ax2.bar_label(bc, labels=[f"{height:.0%}"], label_type='center')
-    
-    ax2.set_title('Peptide Precision')
-    ax2.legend(loc='best', bbox_to_anchor=(0.2, -0.4, 0.5, 0.5))
-    ax2.axis('off')
-    ax2.set_xlim(- 3.5 * width, 3.5 * width)
-    
-    # Bar chart 2 for AA Precision
-    aa_ratios = [matched_metrics['aa_precision of total pred. AA in %']/100, 1-matched_metrics['aa_precision of total pred. AA in %']/100]
-    aa_labels = [f"Matched ({matched_metrics['n_total_correct_aa']})", f"Not matched ({matched_metrics['n_total_aa']})"]
-    bottom = 1
-    width = .2
-    aa_bar_colors = ['#60FE70', '#FE6969']
-    for j, (height, label, color) in enumerate(reversed([*zip(aa_ratios, aa_labels, aa_bar_colors)])):
-        bottom -= height
-        bc = ax3.bar(0, height, width, bottom=bottom, color=color, label=label, alpha=0.5)
-        ax3.bar_label(bc, labels=[f"{height:.0%}"], label_type='center')
-    
-    ax3.set_title('Aminoacid Precision')
-    ax3.legend(loc='best', bbox_to_anchor=(0.3, -0.4, 0.5, 0.5))
-    ax3.axis('off')
-    ax3.set_xlim(- 3.5 * width, 3.5 * width)
-    
-    # Set up connections between the plots
-    theta1, theta2 = wedges[0].theta1, wedges[0].theta2
-    center, r = wedges[0].center, wedges[0].r
-    bar_height = sum(pep_ratios)
-    x = r * np.cos(np.pi / 180 * theta2) + center[0]
-    y = r * np.sin(np.pi / 180 * theta2) + center[1]
-    con = ConnectionPatch(xyA=(-width / 2, bar_height), coordsA=ax2.transData, xyB=(x, y), coordsB=ax1.transData)
-    con.set_color([0, 0, 0])
-    con.set_linewidth(1)
-    ax2.add_artist(con)
-    
-    # Draw bottom connecting line
-    x = r * np.cos(np.pi / 180 * theta1) + center[0]
-    y = r * np.sin(np.pi / 180 * theta1) + center[1]
-    con = ConnectionPatch(xyA=(-width / 2, 0), coordsA=ax2.transData, xyB=(x, y), coordsB=ax1.transData)
-    con.set_color([0, 0, 0])
-    ax2.add_artist(con)
-    con.set_linewidth(1)
-    
-    save_plot_with_path(f'{file_name}_matched_metrics_plot.png', output)
-    plt.show()
+        # Update rotation angle with user input
+        try:
+            rotation_angle = float(user_input)
+        except ValueError:
+            print("Invalid input. Please enter a valid rotation angle.")
 
 ######### metrics vs modified aminoacids
 
@@ -622,6 +635,7 @@ def plot_aa_scores_horizontal(
     # Calculate bar positions
     y_positions = np.arange(len(bins[:-1]))
 
+    plt.figure(figsize=(10, 6))
     # Plot histograms using Matplotlib
     plt.barh(y_positions - bar_height/2, true_counts, height=bar_height, color='#2BDD1F', alpha=0.6, label='True Counts')
     plt.barh(y_positions + bar_height/2, false_counts, height=bar_height, color='#FE6969', alpha=0.4, label='False Counts')
@@ -749,142 +763,154 @@ def plot_dark_metrics(df, matched_df, casanovo_unmatched_df, high_mean_aa_score_
     
     #fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 4))
     #fig.subplots_adjust(wspace=0)
-    
-    fig = plt.figure(figsize=(12,5))
-    left, bottom, width, height = 0.1, 0.1, 0.6, 0.6
-    
-    x_position = -0.1 # Fraction of figure width
-    y_position = 0.15  # Fraction of figure height
-    width = 0.8       # Fraction of figure width
-    height = 0.6      # Fraction of figure height
-    
-    ax1 = fig.add_axes([0, 0, width, height])
-    
-
-    # Define data for pie chart
-    overall_ratios = [predicted_matched, not_predicted, low_score_dark_annotation,  high_score_dark_annotation]
-    labels = [f'Predicted & Matched\n({predicted_matched})',
-              f'Not Predicted\n({not_predicted})', 
-                f'Predicted \n & Not Matched \n & Mean AA Score < 90% \n({low_score_dark_annotation})',
-                f'Predicted \n & Not Matched \n & Mean AA Score > 90% \n({high_score_dark_annotation})',
-          ]
-    explode = (0.1, 0, 0, 0.1) 
-    angle = 40
-    colors = ['cornflowerblue', 'dimgray',  'darkkhaki', 'lemonchiffon']
-    wedges, texts, _ = ax1.pie(overall_ratios, autopct='%1.1f%%', startangle=angle, colors=colors, labels=labels, explode=explode, radius=1.3, shadow = True)
-    ax1.set_title('Casanovo Peptide Annotation of HeLa Data (151503 spectra) After Casanovo Prediction Evaluation', y=1.1)
-
-    x,y = texts[2].get_position()
-    texts[2].set_position((x - 0.3, y- 0.2))
-
-    if modified_bool:
-
-        modified_sequences = high_mean_aa_score_peptides[high_mean_aa_score_peptides['cs_modified'] == True]
-        modified_count = modified_sequences.shape[0]
-        modified_ratio = modified_count/high_score_dark_annotation
-        non_modified_sequences = high_mean_aa_score_peptides[high_mean_aa_score_peptides['cs_modified'] == False]
-        non_modified_count = non_modified_sequences.shape[0]
-        non_modified_ratio = non_modified_count/high_score_dark_annotation
-
-        dark_metrics = {'total_predicted_not_matched':int(total_dark_annotation), 
-                    'high_mean_score_annotations':int(high_score_dark_annotation), 'duplicates': int(duplicate_counts),
-                            'duplicate_ratio': round(duplicate_ratio,2), 'unique_ratio': round(1-duplicate_ratio,2),
-                       'modified': int(modified_count), 'modified_ratio':round(modified_ratio,2), 'non_modified_ratio': round(non_modified_ratio,2)}
-    
-        dark_df = pd.DataFrame.from_dict({'metrics_of_unmatched_data':dark_metrics}).reindex(index=['total_predicted_not_matched',
-                                                                                                 'high_mean_score_annotations',
-                                                                                                    'duplicates',
-                                                                                                 'duplicate_ratio', 
-                                                                                                 'unique_ratio', 'modified', 'modified_ratio',
-                                                                                                   'non_modified_ratio'])
-
-        size_scale = 0.5
-    
-        ax2 = fig.add_axes([0.45, 0.40, size_scale*width, size_scale*height])
-        ax3 = fig.add_axes([0.59, 0.40, size_scale*width, size_scale*height])
+    rotation_angle = 40
+    while True:
+        fig = plt.figure(figsize=(12,5))
+        left, bottom, width, height = 0.1, 0.1, 0.6, 0.6
         
-        bbox_to_anchor_1 = (0.2, -0.4, 0.5, 0.5)
-        bbox_to_anchor_2 = (0.3, -0.4, 0.5, 0.5)
-
-      # Bar chart 1 for Duplication analysis
-        pep_ratios = [1-duplicate_ratio, duplicate_ratio]
-        pep_labels = [f'Unique peptides ({unique_counts})', f'Duplicate peptides ({duplicate_counts})']
-        bottom = 1
-        width = .2
-        pep_bar_colors = ['#1560bd', 'lavender']
-        for j, (height, label, color) in enumerate(reversed([*zip(pep_ratios, pep_labels, pep_bar_colors)])):
-            bottom -= height
-            bc = ax2.bar(0, height, width, bottom=bottom, color=color, label=label, alpha=0.5)
-            ax2.bar_label(bc, labels=[f"{height:.0%}"], label_type='center')
+        x_position = -0.1 # Fraction of figure width
+        y_position = 0.15  # Fraction of figure height
+        width = 0.8       # Fraction of figure width
+        height = 0.6      # Fraction of figure height
         
-        ax2.set_title('Duplication Ratio')
-        ax2.legend(loc='best', bbox_to_anchor=bbox_to_anchor_1)
-        ax2.axis('off')
-        ax2.set_xlim(- 3.5 * width, 3.5 * width)
-    
-            # Bar chart 2 for Modification analysis
-        aa_ratios = [non_modified_ratio, modified_ratio,]
-        aa_labels = [f"Not modified peptides ({non_modified_count})", f"Modified peptides ({modified_count})"]
-        bottom = 1
-        width = .2
-        aa_bar_colors = ['#60FE70', 'rebeccapurple']
-        for j, (height, label, color) in enumerate(reversed([*zip(aa_ratios, aa_labels, aa_bar_colors)])):
-            bottom -= height
-            bc = ax3.bar(0, height, width, bottom=bottom, color=color, label=label, alpha=0.5)
-            ax3.bar_label(bc, labels=[f"{height:.0%}"], label_type='center')
+        ax1 = fig.add_axes([x_position, y_position, width, height])
         
-        ax3.set_title('Modification Ratio')
-        ax3.legend(loc='best', bbox_to_anchor=bbox_to_anchor_2)
-        ax3.axis('off')
-        ax3.set_xlim(- 3.5 * width, 3.5 * width)
     
-
-    else:
-        size_scale = 1
+        # Define data for pie chart
+        overall_ratios = [predicted_matched, not_predicted, low_score_dark_annotation,  high_score_dark_annotation]
+        labels = [f'Predicted & Matched\n({predicted_matched})',
+                  f'Not Predicted\n({not_predicted})', 
+                    f'Predicted \n & Not Matched \n & Mean AA Score < 90% \n({low_score_dark_annotation})',
+                    f'Predicted \n & Not Matched \n & Mean AA Score > 90% \n({high_score_dark_annotation})',
+              ]
+        explode = (0.1, 0, 0, 0.1) 
+        colors = ['cornflowerblue', 'dimgray',  'darkkhaki', 'lemonchiffon']
+        wedges, texts, _ = ax1.pie(overall_ratios, autopct='%1.1f%%', startangle=rotation_angle, colors=colors, labels=labels, explode=explode, radius=1.3, shadow = True)
+        ax1.set_title('Casanovo Peptide Annotation of HeLa Data (151503 spectra)', y=1.2)
     
-        ax2 = fig.add_axes([0.5, 0.4, 0.6, size_scale*height])
-
-        bbox_to_anchor_1 =(0.15, -0.4, 0.5, 0.5)
-
-        # Bar chart 1 for Duplication analysis
-        pep_ratios = [1-duplicate_ratio, duplicate_ratio]
-        pep_labels = [f'Unique ({unique_counts})', f'Duplicates ({duplicate_counts})']
-        bottom = 1
-        width = .2
-        pep_bar_colors = ['#1560bd', 'lavender']
-        for j, (height, label, color) in enumerate(reversed([*zip(pep_ratios, pep_labels, pep_bar_colors)])):
-            bottom -= height
-            bc = ax2.bar(0, height, width, bottom=bottom, color=color, label=label, alpha=0.5)
-            ax2.bar_label(bc, labels=[f"{height:.0%}"], label_type='center')
+        x,y = texts[2].get_position()
+        texts[2].set_position((x - 0.3, y- 0.2))
+    
+        if modified_bool:
+    
+            modified_sequences = high_mean_aa_score_peptides[high_mean_aa_score_peptides['cs_modified'] == True]
+            modified_count = modified_sequences.shape[0]
+            modified_ratio = modified_count/high_score_dark_annotation
+            non_modified_sequences = high_mean_aa_score_peptides[high_mean_aa_score_peptides['cs_modified'] == False]
+            non_modified_count = non_modified_sequences.shape[0]
+            non_modified_ratio = non_modified_count/high_score_dark_annotation
+    
+            dark_metrics = {'total_predicted_not_matched':int(total_dark_annotation), 
+                        'high_mean_score_annotations':int(high_score_dark_annotation), 'duplicates': int(duplicate_counts),
+                                'duplicate_ratio': round(duplicate_ratio,2), 'unique_ratio': round(1-duplicate_ratio,2),
+                           'modified': int(modified_count), 'modified_ratio':round(modified_ratio,2), 'non_modified_ratio': round(non_modified_ratio,2)}
         
-        ax2.set_title('Duplication Ratio')
-        ax2.legend(bbox_to_anchor = bbox_to_anchor_1, loc='best')
-        ax2.axis('off')
-        ax2.set_xlim(- 3.5 * width, 3.5 * width)
-
-    print(dark_df)
-    connected_section = 3
-    # Set up connections between the plots
-    theta1, theta2 = wedges[connected_section].theta1, wedges[connected_section].theta2
-    center, r = wedges[connected_section].center, wedges[0].r
-    bar_height = sum(pep_ratios)
-    x = r * np.cos(np.pi / 180 * theta2) + center[0]
-    y = r * np.sin(np.pi / 180 * theta2) + center[1]
-    con = ConnectionPatch(xyA=(-width / 2, bar_height), coordsA=ax2.transData, xyB=(x, y), coordsB=ax1.transData)
-    con.set_color([0, 0, 0])
-    con.set_linewidth(1)
-    ax2.add_artist(con)
+            dark_df = pd.DataFrame.from_dict({'metrics_of_unmatched_data':dark_metrics}).reindex(index=['total_predicted_not_matched',
+                                                                                                     'high_mean_score_annotations',
+                                                                                                        'duplicates',
+                                                                                                     'duplicate_ratio', 
+                                                                                                     'unique_ratio', 'modified', 'modified_ratio',
+                                                                                                       'non_modified_ratio'])
     
-    # Draw bottom connecting line
-    x = r * np.cos(np.pi / 180 * theta1) + center[0]
-    y = r * np.sin(np.pi / 180 * theta1) + center[1]
-    con = ConnectionPatch(xyA=(-width / 2, 0), coordsA=ax2.transData, xyB=(x, y), coordsB=ax1.transData)
-    con.set_color([0, 0, 0])
-    ax2.add_artist(con)
-    con.set_linewidth(1)
+            size_scale = 0.5
+        
+            ax2 = fig.add_axes([0.45, 0.40, size_scale*width, size_scale*height])
+            ax3 = fig.add_axes([0.59, 0.40, size_scale*width, size_scale*height])
+            
+            bbox_to_anchor_1 = (0.2, -0.4, 0.5, 0.5)
+            bbox_to_anchor_2 = (0.4, -0.4, 0.5, 0.5)
     
-    save_plot_with_path(f'{file_name}_dark_metrics_plot.png', output)
-    plt.show()
+          # Bar chart 1 for Duplication analysis
+            pep_ratios = [1-duplicate_ratio, duplicate_ratio]
+            pep_labels = [f'Unique peptides ({unique_counts})', f'Duplicate peptides ({duplicate_counts})']
+            bottom = 1
+            width = .2
+            pep_bar_colors = ['#1560bd', 'lavender']
+            for j, (height, label, color) in enumerate(reversed([*zip(pep_ratios, pep_labels, pep_bar_colors)])):
+                bottom -= height
+                bc = ax2.bar(0, height, width, bottom=bottom, color=color, label=label, alpha=0.5)
+                ax2.bar_label(bc, labels=[f"{height:.0%}"], label_type='center')
+            
+            ax2.set_title('Duplication Ratio')
+            ax2.legend(loc='best', bbox_to_anchor=bbox_to_anchor_1)
+            ax2.axis('off')
+            ax2.set_xlim(- 3.5 * width, 3.5 * width)
+        
+                # Bar chart 2 for Modification analysis
+            aa_ratios = [non_modified_ratio, modified_ratio,]
+            aa_labels = [f"Not modified peptides ({non_modified_count})", f"Modified peptides ({modified_count})"]
+            bottom = 1
+            width = .2
+            aa_bar_colors = ['#60FE70', 'rebeccapurple']
+            for j, (height, label, color) in enumerate(reversed([*zip(aa_ratios, aa_labels, aa_bar_colors)])):
+                bottom -= height
+                bc = ax3.bar(0, height, width, bottom=bottom, color=color, label=label, alpha=0.5)
+                ax3.bar_label(bc, labels=[f"{height:.0%}"], label_type='center')
+            
+            ax3.set_title('Modification Ratio')
+            ax3.legend(loc='best', bbox_to_anchor=bbox_to_anchor_2)
+            ax3.axis('off')
+            ax3.set_xlim(- 3.5 * width, 3.5 * width)
+        
+    
+        else:
+            size_scale = 1
+        
+            ax2 = fig.add_axes([0.5, 0.4, 0.6, size_scale*height])
+    
+            bbox_to_anchor_1 =(0.15, -0.4, 0.5, 0.5)
+    
+            # Bar chart 1 for Duplication analysis
+            pep_ratios = [1-duplicate_ratio, duplicate_ratio]
+            pep_labels = [f'Unique ({unique_counts})', f'Duplicates ({duplicate_counts})']
+            bottom = 1
+            width = .2
+            pep_bar_colors = ['#1560bd', 'lavender']
+            for j, (height, label, color) in enumerate(reversed([*zip(pep_ratios, pep_labels, pep_bar_colors)])):
+                bottom -= height
+                bc = ax2.bar(0, height, width, bottom=bottom, color=color, label=label, alpha=0.5)
+                ax2.bar_label(bc, labels=[f"{height:.0%}"], label_type='center')
+            
+            ax2.set_title('Duplication Ratio')
+            ax2.legend(bbox_to_anchor = bbox_to_anchor_1, loc='best')
+            ax2.axis('off')
+            ax2.set_xlim(- 3.5 * width, 3.5 * width)
+    
+        print(dark_df)
+        connected_section = 3
+        # Set up connections between the plots
+        theta1, theta2 = wedges[connected_section].theta1, wedges[connected_section].theta2
+        center, r = wedges[connected_section].center, wedges[0].r
+        bar_height = sum(pep_ratios)
+        x = r * np.cos(np.pi / 180 * theta2) + center[0]
+        y = r * np.sin(np.pi / 180 * theta2) + center[1]
+        con = ConnectionPatch(xyA=(-width / 2, bar_height), coordsA=ax2.transData, xyB=(x, y), coordsB=ax1.transData)
+        con.set_color([0, 0, 0])
+        con.set_linewidth(1)
+        ax2.add_artist(con)
+        
+        # Draw bottom connecting line
+        x = r * np.cos(np.pi / 180 * theta1) + center[0]
+        y = r * np.sin(np.pi / 180 * theta1) + center[1]
+        con = ConnectionPatch(xyA=(-width / 2, 0), coordsA=ax2.transData, xyB=(x, y), coordsB=ax1.transData)
+        con.set_color([0, 0, 0])
+        ax2.add_artist(con)
+        con.set_linewidth(1)
+        
+        save_plot_with_path(f'{file_name}_dark_metrics_plot.png', output)
+        plt.show()
+        
+        user_input = input("Enter rotation angle (or 'exit' to quit): ")
+    
+        if user_input.lower() == 'exit':
+            break  
+    
+        # Update rotation angle with user input
+        try:
+            rotation_angle = float(user_input)
+        except ValueError:
+            print("Invalid input. Please enter a valid rotation angle.")
+    
 
     return dark_df
 

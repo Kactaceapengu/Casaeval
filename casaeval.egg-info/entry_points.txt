@@ -1,0 +1,2 @@
+[console_scripts]
+casaeval = casaeval.casaeval_main:main

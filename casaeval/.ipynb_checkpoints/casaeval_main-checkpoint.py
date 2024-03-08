@@ -30,16 +30,14 @@ import pandas as pd
 import matplotlib
 
 
-from Casaval.casaeval.evaluation.masses import PeptideMass
-
-# import TIMS to .mgf converter
-from Casaval.casaeval.processing.raw_data_conversion import converter_timsd_to_mgf
-
-# import Writer for adding predictions
-from Casaval.casaeval.processing.prediction_writer import add_predictions_to_mgf
+from .evaluation.masses import PeptideMass
+from .processing.raw_data_conversion import converter_timsd_to_mgf # import TIMS to .mgf converter
+from .processing.prediction_writer import add_predictions_to_mgf # import Writer for adding predictions
+from .automation.SLURMscripter import generate_slurm_scripts # import scripter for automating casanovo runs
 
 # Evaluation functions
-import Casaval.casaeval.evaluation.prediction_evaluation as predeval
+import casaeval.evaluation.prediction_evaluation as predeval
+
 
 logger = logging.getLogger("casaeval")
 click.rich_click.USE_MARKDOWN = True
@@ -85,7 +83,7 @@ def main():
     of the 39th International Conference on Machine Learning - ICML '22 (2022)
     doi:10.1101/2022.02.07.479481.
 
-    Official code website of casanovo: https://github.com/Noble-Lab/casanovo
+    Official code website of casanovo: https://github.com/Noble-Lab/casanovo \n
     Official code website of casaeval: https://github.com/Kactaceapengu/casaeval
     """
     pass
@@ -314,6 +312,28 @@ def evaluate(
         df, matched_df, casanovo_unmatched_df = predeval.mgf_to_df(input_mgf, modified_bool)  # Retrieve data
         
         evaluate_dark(casanovo_unmatched_df)
+
+@main.command(cls=_SharedParams)
+@click.option("-i", "--input", "-input_folder", "-input_file", required=True, type=click.Path(exists=True, file_okay=True, dir_okay=True))
+@click.option("--command", "-c", help="Specify, which casanovo command will be automated.",type=click.Choice(["sequence", "train", "evaluate"]), required=True)
+def automate(
+    input: str,
+    command: str,
+    output: Optional[str],
+    verbosity: Optional[str]  # Just for log data
+) -> None:
+    """Automates SLURM scripting and its execution for casanovo run on servers."""
+
+    output = setup_logging(output, verbosity)
+    
+    logger.info(f"Generating scripts for casanovo SLURM runs.")
+
+    if output == '':
+        output = None
+        
+    generate_slurm_scripts(input, command, output)
+    
+    logger.info("DONE!")
 
 
 def setup_logging(
