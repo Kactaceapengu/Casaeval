@@ -1,6 +1,6 @@
 # Casaeval: Data Processing and Prediction Evaluation of Casanovo
 
-Casaeval is a versatile tool designed to convert BRUKER TIMS data files (.d) into Mascot Generic Format (.mgf) files.
+Casaeval is a versatile tool designed to utilize TimsRust in converting BRUKER TIMS data files (.d) into Mascot Generic Format (.mgf) files.
 
 It also generates SLURM scripts for executing Casanovo on servers and includes evaluation scripts for analyzing the .mgf data.
 
