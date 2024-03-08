@@ -6,7 +6,7 @@ It also generates SLURM scripts for executing Casanovo on servers and includes e
 
 Additionally, provided evaluation scripts compare Casanovo predictions with database predictions, enhancing data interpretation in mass spectrometry experiments for each measurement.
 
-Casaeval assists in evaluating unmatched peptide annotations of unknown spectra based on their Casanovo prediction scores and the degree of alignment with database annotations, , saving those with high mean scores exceeding a specified threshold.
+Casaeval assists in evaluating unmatched peptide annotations of unknown spectra based on their Casanovo prediction scores and the degree of alignment with database annotations, saving those with high mean scores exceeding a specified threshold.
 
 With seamless integration, Casaeval adds predictions directly to .mgf files, simplifying the analysis process for users.
 
