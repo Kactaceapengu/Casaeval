@@ -13,3 +13,5 @@ With seamless integration, Casaeval adds predictions directly to .mgf files, sim
 
 
 **Installation:** Download dist folder, navigate into it and execute "pip install casaeval-0.0.1-py3-none-any.whl".
+
+**Usage:** The command 'casaeval -h' shows all possible commands: 'automate', 'timsconvert', 'predictions' and 'evaluate'. By executing f.ex. 'casaeval evaluate -h' their needed input are explained and shown. A documentary of all scripts will follow.
