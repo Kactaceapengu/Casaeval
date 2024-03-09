@@ -199,8 +199,12 @@ def evaluate(
                                      'correct_peptide in %', 'n_total_wrong_peptide', 'wrong_peptide in %'])
         print(eval_df)
         predeval.plot_matched_metrics(df, matched_df, matched_metrics, file_name_without_extension, output)
-        
-        eval_df.to_csv(f"{file_name_without_extension}_matched_metrics.csv", index=False)
+
+        if output != None and output !='':
+            csvoutput = f"{output}/{file_name_without_extension}"
+        else:
+            csvoutput = file_name_without_extension
+        eval_df.to_csv(f"{csvoutput}_matched_metrics.csv", index=True)
         print(f'Matched metric data were saved as {file_name_without_extension}_matched_metrics.csv at {output}')
         
         if modified_bool: # Check if modified predictions are specified
@@ -224,7 +228,7 @@ def evaluate(
 
                 print(mod_eval_df)
                 predeval.plot_modified_metrics(matched_metrics, mod_metrics, non_mod_metrics, file_name_without_extension, output)
-                mod_eval_df.to_csv(f"{file_name_without_extension}_matched_metrics.csv", index=False)
+                mod_eval_df.to_csv(f"{csvoutput}_matched_metrics.csv", index=True)
         
         # Continue with amino acid precision and recall evaluation with different prediction score thresholds?
         proceed_aa_evaluation = input('Continue with amino acid precision and recall evaluation with different prediction score thresholds? (y/n/a): ')
@@ -245,6 +249,7 @@ def evaluate(
             # Evaluate correctly and incorrectly amino acid match count with different prediction score thresholds
             boolean_pred_score_distribution_data = predeval.plot_aa_scores_horizontal(matched_df, aadict, cum_mass_threshold=np.inf,
                                                                                       file_name=file_name_without_extension, output=output)
+        
 
     def evaluate_dark(casanovo_unmatched_df):
         # Evaluate aminoacid score and peptide vs aa score distribution of the 'dark peptides':
@@ -272,9 +277,14 @@ def evaluate(
         high_mean_aa_score_peptides_subset = high_mean_aa_score_peptides_sorted.iloc[0:20, [precursor_index, casanovo_seq_index, mean_aa_score_index]]
         print(high_mean_aa_score_peptides_subset)
 
+        if output != None and output !='':
+            csvoutput = f"{output}/{file_name_without_extension}"
+        else:
+            csvoutput = file_name_without_extension
+        
         print(f'Saving dark annotations with mean prediction score greater or equal {dark_pred_score_threshold}...')
-        high_mean_aa_score_peptides_sorted.to_csv(f"{file_name_without_extension}_casanovo_annotations_prediction_score_over_{dark_pred_score_threshold}.csv",
-                                                  index=False)
+        high_mean_aa_score_peptides_sorted.to_csv(f"{csvoutput}_casanovo_annotations_prediction_score_over_{dark_pred_score_threshold}.csv",
+                                                  index=True)
         print(f'{file_name_without_extension}_casanovo_annotations_prediction_score_over_{dark_pred_score_threshold}.csv" at {output}')
         
     """Evaluates spectra file [.mgf] with 'matched' or 'dark' mode."""
@@ -291,7 +301,8 @@ def evaluate(
         if proceed_dark_evaluation.lower() == 'y':
             evaluate_dark(casanovo_unmatched_df)
 
-            
+        print(f'Saving matched annotations...')
+        matched_df.to_csv(f"{csvoutput}_casanovo_matched_annotation.csv")
             
     elif not matched and not dark:
         click.echo("Please specify either 'matched' or 'dark' mode or both.")
@@ -304,6 +315,8 @@ def evaluate(
         df, matched_df, _ = predeval.mgf_to_df(input_mgf, modified_bool)  # Retrieve data
         
         evaluate_matched(file_name_without_extension, output)
+        print(f'Saving matched annotations...')
+        matched_df.to_csv(f"{csvoutput}_casanovo_matched_annotation.csv")
     
     elif dark:
         click.echo(f"Evaluating spectra file {input_mgf} with 'dark' mode...")

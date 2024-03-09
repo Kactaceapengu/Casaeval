@@ -31,17 +31,18 @@ casaeval.egg-info/entry_points.txt
 casaeval.egg-info/requires.txt
 casaeval.egg-info/top_level.txt
 casaeval/.ipynb_checkpoints/__init__-checkpoint.py
-casaeval/.ipynb_checkpoints/casaeval_main-checkpoint.py
 casaeval/__pycache__/__init__.cpython-310.pyc
 casaeval/automation/SLURMscripter.py
+casaeval/automation/.ipynb_checkpoints/SLURMscripter-checkpoint.py
 casaeval/evaluation/.DS_Store
 casaeval/evaluation/__init__.py
 casaeval/evaluation/evaluate.py
 casaeval/evaluation/masses.py
-casaeval/evaluation/prediction_evaluation copy.py
 casaeval/evaluation/prediction_evaluation.py
 casaeval/evaluation/.ipynb_checkpoints/__init__-checkpoint.py
 casaeval/evaluation/.ipynb_checkpoints/evaluate-checkpoint.py
+casaeval/evaluation/.ipynb_checkpoints/masses-checkpoint.py
+casaeval/evaluation/.ipynb_checkpoints/prediction_evaluation copy-checkpoint.py
 casaeval/evaluation/.ipynb_checkpoints/prediction_evaluation-checkpoint.py
 casaeval/evaluation/__pycache__/__init__.cpython-310.pyc
 casaeval/evaluation/__pycache__/evaluate.cpython-310.pyc
